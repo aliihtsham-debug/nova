@@ -28,43 +28,120 @@ import type {
   SourceLocation,
 } from './ast.js';
 
+/**
+ * Fresh source location to avoid shared mutable references.
+ * Every AST node gets its own location object.
+ */
+function createLoc(): SourceLocation {
+  return {
+    start: { line: 1, column: 1, offset: 0 },
+    end: { line: 1, column: 1, offset: 0 },
+  };
+}
+
+/**
+ * Normalize a fieldType from the CST to a plain string.
+ * The parser may return either a token image string or a token object.
+ */
+function normalizeFieldType(raw: unknown): string {
+  if (typeof raw === 'string') return raw;
+  if (raw && typeof raw === 'object') {
+    const obj = raw as { image?: string; name?: string };
+    return obj.image ?? obj.name ?? 'string';
+  }
+  return 'string';
+}
+
+// ---------------------------------------------------------------------------
+// CST node shape interfaces (tighter than a single catch-all)
+// ---------------------------------------------------------------------------
+
 interface CSTNode {
   type: string;
   name?: string;
   image?: string;
   value?: string | number | boolean;
+}
+
+interface ProgramCSTNode extends CSTNode {
+  type: 'ProgramNode';
   declarations?: CSTNode[];
-  fields?: CSTNode[];
-  elements?: CSTNode[];
-  steps?: CSTNode[];
-  condition?: CSTNode;
-  thenStep?: CSTNode;
-  elseStep?: CSTNode;
-  actionScript?: string;
-  inputArguments?: string[];
-  outputVariables?: string[];
-  targetAddress?: string;
-  channel?: string;
-  messageBody?: string;
-  left?: CSTNode;
-  right?: CSTNode;
-  operator?: string;
-  chartType?: string;
-  sourceEntity?: string;
-  groupByField?: string;
-  whereClause?: CSTNode;
-  selectFields?: string[];
-  columns?: Array<{ name: string; label?: string }>;
-  fieldType?: string | { name: string };
+}
+
+interface EntityCSTNode extends CSTNode {
+  type: 'EntityNode';
+  fields?: FieldCSTNode[];
+}
+
+interface FieldCSTNode extends CSTNode {
+  type: 'FieldNode';
+  fieldType?: string | { name?: string; image?: string };
   isNullable?: boolean;
   isList?: boolean;
   relationTarget?: string;
 }
 
-const defaultLoc: SourceLocation = {
-  start: { line: 1, column: 1, offset: 0 },
-  end: { line: 1, column: 1, offset: 0 },
-};
+interface DashboardCSTNode extends CSTNode {
+  type: 'DashboardNode';
+  elements?: CSTNode[];
+}
+
+interface WorkflowCSTNode extends CSTNode {
+  type: 'WorkflowNode';
+  steps?: CSTNode[];
+}
+
+interface DecisionCSTNode extends CSTNode {
+  type: 'DecisionStepNode';
+  condition?: CSTNode;
+  thenStep?: CSTNode;
+  elseStep?: CSTNode;
+}
+
+interface NotifyCSTNode extends CSTNode {
+  type: 'NotifyStepNode';
+  targetAddress?: string;
+  channel?: string;
+  messageBody?: string;
+}
+
+interface ActionCSTNode extends CSTNode {
+  type: 'ActionStepNode';
+  actionScript?: string;
+  inputArguments?: string[];
+  outputVariables?: string[];
+}
+
+interface ExpressionCSTNode extends CSTNode {
+  type: 'BinaryExpressionNode' | 'LogicalExpressionNode';
+  left?: CSTNode;
+  right?: CSTNode;
+  operator?: string;
+}
+
+interface IdentifierCSTNode extends CSTNode {
+  type: 'IdentifierNode';
+  name: string;
+}
+
+interface LiteralCSTNode extends CSTNode {
+  type: 'LiteralNode';
+  value: string | number | boolean;
+}
+
+// Dashboard element CST nodes have additional fields beyond the base
+interface DashboardElementCSTNode extends CSTNode {
+  sourceEntity?: string;
+  whereClause?: CSTNode;
+  selectFields?: string[];
+  chartType?: string;
+  groupByField?: string;
+  columns?: Array<{ name: string; label?: string }>;
+}
+
+// ---------------------------------------------------------------------------
+// Visitor entry point
+// ---------------------------------------------------------------------------
 
 /**
  * Convert a raw CST node into a typed AST node.
@@ -73,45 +150,43 @@ export function visitCST(cst: CSTNode): ProgramNode {
   if (cst.type !== 'ProgramNode') {
     throw new Error(`Expected ProgramNode at root, got ${cst.type}`);
   }
-  return visitProgramNode(cst);
+  return visitProgramNode(cst as ProgramCSTNode);
 }
 
-function visitProgramNode(cst: CSTNode): ProgramNode {
+function visitProgramNode(cst: ProgramCSTNode): ProgramNode {
   const declarations = (cst.declarations ?? []).map((d) => visitDeclaration(d)) as DeclarationNode[];
-  return { type: 'Program', declarations, loc: { ...defaultLoc } };
+  return { type: 'Program', declarations, loc: createLoc() };
 }
 
 function visitDeclaration(cst: CSTNode): DeclarationNode {
   switch (cst.type) {
-    case 'EntityNode': return visitEntityNode(cst);
-    case 'DashboardNode': return visitDashboardNode(cst);
-    case 'WorkflowNode': return visitWorkflowNode(cst);
+    case 'EntityNode': return visitEntityNode(cst as EntityCSTNode);
+    case 'DashboardNode': return visitDashboardNode(cst as DashboardCSTNode);
+    case 'WorkflowNode': return visitWorkflowNode(cst as WorkflowCSTNode);
     default: throw new Error(`Unknown declaration type: ${cst.type}`);
   }
 }
 
-function visitEntityNode(cst: CSTNode): EntityNode {
+function visitEntityNode(cst: EntityCSTNode): EntityNode {
   const fields = (cst.fields ?? []).map((f) => visitFieldNode(f)) as FieldNode[];
-  return { type: 'Entity', name: cst.name ?? '', fields, loc: { ...defaultLoc } };
+  return { type: 'Entity', name: cst.name ?? '', fields, loc: createLoc() };
 }
 
-function visitFieldNode(cst: CSTNode): FieldNode {
-  const rawType = cst.fieldType;
-  const fieldType = typeof rawType === 'string' ? rawType : (rawType?.name ?? 'string');
+function visitFieldNode(cst: FieldCSTNode): FieldNode {
   return {
     type: 'Field',
     name: cst.name ?? '',
-    fieldType,
+    fieldType: normalizeFieldType(cst.fieldType),
     isNullable: cst.isNullable ?? false,
     isList: cst.isList ?? false,
     relationTarget: cst.relationTarget,
-    loc: { ...defaultLoc },
+    loc: createLoc(),
   };
 }
 
-function visitDashboardNode(cst: CSTNode): DashboardNode {
+function visitDashboardNode(cst: DashboardCSTNode): DashboardNode {
   const elements = (cst.elements ?? []).map((e) => visitDashboardElement(e)) as DashboardElementNode[];
-  return { type: 'Dashboard', name: cst.name ?? '', elements, loc: { ...defaultLoc } };
+  return { type: 'Dashboard', name: cst.name ?? '', elements, loc: createLoc() };
 }
 
 function visitDashboardElement(cst: CSTNode): DashboardElementNode {
@@ -123,18 +198,18 @@ function visitDashboardElement(cst: CSTNode): DashboardElementNode {
   }
 }
 
-function visitCardNode(cst: CSTNode): CardNode {
+function visitCardNode(cst: DashboardElementCSTNode): CardNode {
   return {
     type: 'Card',
     name: cst.name ?? '',
     sourceEntity: cst.sourceEntity ?? '',
     whereClause: cst.whereClause ? (visitExpression(cst.whereClause) as ExpressionNode) : undefined,
     selectFields: cst.selectFields,
-    loc: { ...defaultLoc },
+    loc: createLoc(),
   };
 }
 
-function visitChartNode(cst: CSTNode): ChartNode {
+function visitChartNode(cst: DashboardElementCSTNode): ChartNode {
   return {
     type: 'Chart',
     name: cst.name ?? '',
@@ -142,57 +217,63 @@ function visitChartNode(cst: CSTNode): ChartNode {
     sourceEntity: cst.sourceEntity ?? '',
     groupByField: cst.groupByField ?? '',
     whereClause: cst.whereClause ? (visitExpression(cst.whereClause) as ExpressionNode) : undefined,
-    loc: { ...defaultLoc },
+    loc: createLoc(),
   };
 }
 
-function visitTableViewNode(cst: CSTNode): TableViewNode {
+function visitTableViewNode(cst: DashboardElementCSTNode): TableViewNode {
   return {
     type: 'TableView',
     name: cst.name ?? '',
     sourceEntity: cst.sourceEntity ?? '',
     whereClause: cst.whereClause ? (visitExpression(cst.whereClause) as ExpressionNode) : undefined,
     columns: cst.columns ?? [],
-    loc: { ...defaultLoc },
+    loc: createLoc(),
   };
 }
 
-function visitWorkflowNode(cst: CSTNode): WorkflowNode {
+function visitWorkflowNode(cst: WorkflowCSTNode): WorkflowNode {
   const steps = (cst.steps ?? []).map((s) => visitStep(s)) as StepNode[];
-  return { type: 'Workflow', name: cst.name ?? '', steps, loc: { ...defaultLoc } };
+  return { type: 'Workflow', name: cst.name ?? '', steps, loc: createLoc() };
 }
 
 function visitStep(cst: CSTNode): StepNode {
   switch (cst.type) {
-    case 'ActionStepNode': return visitActionStep(cst);
-    case 'DecisionStepNode': return visitDecisionStep(cst);
-    case 'NotifyStepNode': return visitNotifyStep(cst);
+    case 'ActionStepNode': return visitActionStep(cst as ActionCSTNode);
+    case 'DecisionStepNode': return visitDecisionStep(cst as DecisionCSTNode);
+    case 'NotifyStepNode': return visitNotifyStep(cst as NotifyCSTNode);
     default: throw new Error(`Unknown step type: ${cst.type}`);
   }
 }
 
-function visitActionStep(cst: CSTNode): ActionStepNode {
+function visitActionStep(cst: ActionCSTNode): ActionStepNode {
   return {
     type: 'ActionStep',
     name: cst.name ?? '',
     actionScript: cst.actionScript ?? '',
     inputArguments: cst.inputArguments,
     outputVariables: cst.outputVariables,
-    loc: { ...defaultLoc },
+    loc: createLoc(),
   };
 }
 
-function visitDecisionStep(cst: CSTNode): DecisionStepNode {
+function visitDecisionStep(cst: DecisionCSTNode): DecisionStepNode {
+  if (!cst.condition) {
+    throw new Error('DecisionStep is missing a condition');
+  }
+  if (!cst.thenStep) {
+    throw new Error('DecisionStep is missing a thenStep');
+  }
   return {
     type: 'DecisionStep',
-    condition: visitExpression(cst.condition!) as ExpressionNode,
-    thenStep: visitStep(cst.thenStep!) as StepNode,
+    condition: visitExpression(cst.condition) as ExpressionNode,
+    thenStep: visitStep(cst.thenStep) as StepNode,
     elseStep: cst.elseStep ? (visitStep(cst.elseStep) as StepNode) : undefined,
-    loc: { ...defaultLoc },
+    loc: createLoc(),
   };
 }
 
-function visitNotifyStep(cst: CSTNode): NotifyStepNode {
+function visitNotifyStep(cst: NotifyCSTNode): NotifyStepNode {
   const rawTarget = cst.targetAddress ?? '';
   const rawMessage = cst.messageBody ?? '';
   return {
@@ -201,46 +282,52 @@ function visitNotifyStep(cst: CSTNode): NotifyStepNode {
     targetAddress: rawTarget.startsWith('"') ? rawTarget.slice(1, -1) : rawTarget,
     channel: (cst.channel as NotifyStepNode['channel']) ?? 'email',
     messageBody: rawMessage.startsWith('"') ? rawMessage.slice(1, -1) : rawMessage,
-    loc: { ...defaultLoc },
+    loc: createLoc(),
   };
 }
 
-function visitExpression(cst: CSTNode): ExpressionNode {
-  if (!cst) return { type: 'Identifier', name: '', loc: { ...defaultLoc } } as IdentifierNode;
+function visitExpression(cst: CSTNode | undefined): ExpressionNode {
+  if (!cst) return { type: 'Identifier', name: '', loc: createLoc() } as IdentifierNode;
 
   switch (cst.type) {
-    case 'BinaryExpressionNode': return visitBinaryExpression(cst);
-    case 'LogicalExpressionNode': return visitLogicalExpression(cst);
-    case 'IdentifierNode': return visitIdentifierNode(cst);
-    case 'LiteralNode': return visitLiteralNode(cst);
-    default: return cst as ExpressionNode;
+    case 'BinaryExpressionNode': return visitBinaryExpression(cst as ExpressionCSTNode);
+    case 'LogicalExpressionNode': return visitLogicalExpression(cst as ExpressionCSTNode);
+    case 'IdentifierNode': return visitIdentifierNode(cst as IdentifierCSTNode);
+    case 'LiteralNode': return visitLiteralNode(cst as LiteralCSTNode);
+    default: return { type: 'Identifier', name: (cst as CSTNode).name ?? '', loc: createLoc() } as IdentifierNode;
   }
 }
 
-function visitBinaryExpression(cst: CSTNode): BinaryExpressionNode {
+function visitBinaryExpression(cst: ExpressionCSTNode): BinaryExpressionNode {
+  if (!cst.left || !cst.right) {
+    throw new Error('BinaryExpressionNode is missing left or right operand');
+  }
   return {
     type: 'BinaryExpression',
-    left: visitExpression(cst.left!) as ExpressionNode,
+    left: visitExpression(cst.left) as ExpressionNode,
     operator: (cst.operator as BinaryExpressionNode['operator']) ?? '==',
-    right: visitExpression(cst.right!) as ExpressionNode,
-    loc: { ...defaultLoc },
+    right: visitExpression(cst.right) as ExpressionNode,
+    loc: createLoc(),
   };
 }
 
-function visitLogicalExpression(cst: CSTNode): LogicalExpressionNode {
+function visitLogicalExpression(cst: ExpressionCSTNode): LogicalExpressionNode {
+  if (!cst.left || !cst.right) {
+    throw new Error('LogicalExpressionNode is missing left or right operand');
+  }
   return {
     type: 'LogicalExpression',
-    left: visitExpression(cst.left!) as ExpressionNode,
+    left: visitExpression(cst.left) as ExpressionNode,
     operator: (cst.operator as LogicalExpressionNode['operator']) ?? '&&',
-    right: visitExpression(cst.right!) as ExpressionNode,
-    loc: { ...defaultLoc },
+    right: visitExpression(cst.right) as ExpressionNode,
+    loc: createLoc(),
   };
 }
 
-function visitIdentifierNode(cst: CSTNode): IdentifierNode {
-  return { type: 'Identifier', name: cst.name ?? '', loc: { ...defaultLoc } };
+function visitIdentifierNode(cst: IdentifierCSTNode): IdentifierNode {
+  return { type: 'Identifier', name: cst.name ?? '', loc: createLoc() };
 }
 
-function visitLiteralNode(cst: CSTNode): LiteralNode {
-  return { type: 'Literal', value: cst.value ?? '', loc: { ...defaultLoc } };
+function visitLiteralNode(cst: LiteralCSTNode): LiteralNode {
+  return { type: 'Literal', value: cst.value ?? '', loc: createLoc() };
 }

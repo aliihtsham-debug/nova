@@ -84,8 +84,6 @@ function fieldToZod(field: FieldNode, knownEntities: Set<string>): string {
 // ---------------------------------------------------------------------------
 function generateCreateSchema(entity: EntityNode, knownEntities: Set<string>): string {
   const lines: string[] = [];
-  lines.push(`import { z } from 'zod';`);
-  lines.push('');
   lines.push(`export const create${entity.name}Schema = z.object({`);
 
   for (const field of entity.fields) {
@@ -101,8 +99,6 @@ function generateCreateSchema(entity: EntityNode, knownEntities: Set<string>): s
 
 function generateUpdateSchema(entity: EntityNode, knownEntities: Set<string>): string {
   const lines: string[] = [];
-  lines.push(`import { z } from 'zod';`);
-  lines.push('');
   lines.push(`export const update${entity.name}Schema = z.object({`);
 
   for (const field of entity.fields) {
@@ -146,7 +142,7 @@ export const zodGenerator: Generator = {
 
       artifacts.push({
         path: `src/lib/validations/${decl.name.toLowerCase()}.ts`,
-        content: createSchema + '\n\n' + updateSchema,
+        content: `import { z } from 'zod';\n\n${createSchema}\n\n${updateSchema}`,
         type: 'file',
       });
     }

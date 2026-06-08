@@ -2,7 +2,7 @@
 // @nova/openrouter — OpenRouter LLM Client + AI Agent Orchestration
 // ---------------------------------------------------------------------------
 // Provides a typed client for the OpenRouter API with:
-//   - Prompt caching (hash-based, keeps cost under $0.05/compilation)
+//   - Prompt caching (hash-based with LRU eviction, keeps cost under $0.05/compilation)
 //   - Retry with exponential backoff
 //   - 4 specialized agents: Architecture, CodeGen, Testing, Repair
 
@@ -17,6 +17,7 @@ const DEFAULT_MODEL = 'openrouter/owl-alpha';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_ENTRIES = 1000;
 
 export interface OpenRouterConfig {
   apiKey: string;
@@ -26,18 +27,25 @@ export interface OpenRouterConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Prompt Cache (hash-based)
+// Prompt Cache (hash-based with LRU eviction)
 // ---------------------------------------------------------------------------
-const promptCache = new Map<string, { response: string; timestamp: number }>();
+interface CacheEntry {
+  response: string;
+  timestamp: number;
+  /** Used for LRU eviction */
+  lastAccess: number;
+}
 
+const promptCache = new Map<string, CacheEntry>();
+
+/**
+ * djb2 hash — better distribution than additive hash, still fast.
+ */
 function cacheHash(prompt: string, model: string): string {
-  // Simple hash for demo — in production use crypto.createHash
-  let hash = 0;
   const str = model + prompt;
+  let hash = 5381;
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
   }
   return hash.toString(36);
 }
@@ -49,11 +57,26 @@ function getCached(hash: string): string | null {
     promptCache.delete(hash);
     return null;
   }
+  // Update access time for LRU
+  entry.lastAccess = Date.now();
   return entry.response;
 }
 
 function setCached(hash: string, response: string): void {
-  promptCache.set(hash, { response, timestamp: Date.now() });
+  // Evict oldest entries if cache is full
+  if (promptCache.size >= MAX_CACHE_ENTRIES) {
+    let oldestKey: string | null = null;
+    let oldestTime = Infinity;
+    for (const [key, entry] of promptCache) {
+      if (entry.lastAccess < oldestTime) {
+        oldestTime = entry.lastAccess;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) promptCache.delete(oldestKey);
+  }
+  const now = Date.now();
+  promptCache.set(hash, { response, timestamp: now, lastAccess: now });
 }
 
 // ---------------------------------------------------------------------------
@@ -66,6 +89,9 @@ export class OpenRouterClient {
   private baseDelayMs: number;
 
   constructor(config: OpenRouterConfig) {
+    if (!config.apiKey) {
+      throw new Error('OpenRouter API key is required');
+    }
     this.client = new OpenAI({
       apiKey: config.apiKey,
       baseURL: 'https://openrouter.ai/api/v1',
@@ -125,11 +151,11 @@ export class OpenRouterClient {
     );
   }
 
-  async completeStructured<T>(
+  async completeStructured<T extends z.ZodType>(
     prompt: string,
-    schema: z.ZodType<T>,
+    schema: T,
     options?: { systemPrompt?: string },
-  ): Promise<T> {
+  ): Promise<z.infer<T>> {
     const jsonSchema = zodToJsonSchema(schema);
     const systemPrompt = (options?.systemPrompt ?? '') +
       '\n\nRespond with valid JSON matching this schema:\n' +
@@ -147,7 +173,7 @@ export class OpenRouterClient {
 
     try {
       const parsed = JSON.parse(jsonStr);
-      return schema.parse(parsed);
+      return schema.parse(parsed) as z.infer<T>;
     } catch {
       throw new Error(`Failed to parse structured response: ${response.slice(0, 200)}`);
     }
@@ -227,7 +253,6 @@ export class RepairAgent {
   async fixError(
     sourceCode: string,
     errorMessage: string,
-    _context?: string,
   ): Promise<AgentResult> {
     const output = await this.client.complete(
       `Fix the following error in the code:\n\nError: ${errorMessage}\n\nCode:\n${sourceCode}`,

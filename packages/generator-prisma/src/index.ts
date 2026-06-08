@@ -60,12 +60,9 @@ function generateModel(entity: EntityNode, knownEntities: Set<string>): string {
       fieldDef += ' @unique';
     }
 
-    // Add @default(now()) for 'createdAt' or 'updatedAt'
-    if (field.name === 'createdAt') {
-      fieldDef += ' @default(now())';
-    }
-    if (field.name === 'updatedAt') {
-      fieldDef += ' @updatedAt';
+    // Skip createdAt/updatedAt from DSL — we always add them automatically
+    if (field.name === 'createdAt' || field.name === 'updatedAt') {
+      continue;
     }
 
     // Add relation annotation
@@ -84,9 +81,13 @@ function generateModel(entity: EntityNode, knownEntities: Set<string>): string {
   // Add relation fields for entities that reference this entity
   // (handled by the @relation on the referencing side)
 
+  // Add timestamp fields (always present for audit + ordering)
+  lines.push('  createdAt DateTime @default(now())');
+  lines.push('  updatedAt DateTime @updatedAt');
+
   // Add @@index for common query patterns
   const indexFields = entity.fields.filter(
-    (f) => f.name === 'email' || f.name === 'slug' || f.name === 'createdAt',
+    (f) => f.name === 'email' || f.name === 'slug',
   );
   if (indexFields.length > 0) {
     lines.push('');
@@ -94,6 +95,8 @@ function generateModel(entity: EntityNode, knownEntities: Set<string>): string {
       lines.push(`  @@index([${idxField.name}])`);
     }
   }
+  // Always index createdAt for ordering performance
+  lines.push('  @@index([createdAt])');
 
   lines.push('}');
   return lines.join('\n');
@@ -140,9 +143,14 @@ function generateSchema(
   blocks.push('}');
   blocks.push('');
 
-  // Enums
-  blocks.push(generateEnum('Role', ['ADMIN', 'MEMBER', 'VIEWER']));
-  blocks.push('');
+  // Enums — only generate Role enum if any entity uses a 'role' field
+  const hasRoleField = program.declarations
+    .filter((d): d is EntityNode => d.type === 'Entity')
+    .some((e) => e.fields.some((f) => f.name === 'role'));
+  if (hasRoleField) {
+    blocks.push(generateEnum('Role', ['ADMIN', 'MEMBER', 'VIEWER']));
+    blocks.push('');
+  }
 
   // Models
   for (const decl of program.declarations) {

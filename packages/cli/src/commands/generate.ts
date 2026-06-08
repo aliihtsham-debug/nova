@@ -71,9 +71,13 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
 
   if (!result.success) {
     console.error(chalk.red(`\n✖ Compilation failed with ${errors.length} error(s).\n`));
-    if (errors.some((e) => e.code?.startsWith('PARSE'))) process.exit(2);
-    if (errors.some((e) => e.code?.startsWith('SEMANTIC'))) process.exit(3);
-    process.exit(5);
+    // Match the compiler's actual error code prefixes:
+    //   DUPLICATE_DECLARATION, DUPLICATE_FIELD, UNKNOWN_RELATION_TARGET,
+    //   UNKNOWN_ENTITY_REF, CIRCULAR_RELATION, EMPTY_ENTITY, etc.
+    if (errors.some((e) => e.code?.startsWith('DUPLICATE_') || e.code?.startsWith('UNKNOWN_') || e.code === 'CIRCULAR_RELATION')) {
+      process.exit(3); // semantic error
+    }
+    process.exit(2); // default to parse/general compilation error
   }
 
   // Write artifacts to disk

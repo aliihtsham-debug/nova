@@ -144,26 +144,21 @@ function checkDashboardRefs(
 // ---------------------------------------------------------------------------
 function checkWorkflowRefs(
   workflow: WorkflowNode,
-  entityNames: Set<string>,
-  diagnostics: CompilerDiagnostic[],
-): void {
-  for (const step of workflow.steps) {
-    checkStepRefs(step, workflow.name, entityNames, diagnostics);
-  }
-}
-
-function checkStepRefs(
-  step: StepNode,
-  _workflowName: string,
   _entityNames: Set<string>,
   _diagnostics: CompilerDiagnostic[],
 ): void {
+  for (const step of workflow.steps) {
+    checkStepRefs(step);
+  }
+}
+
+function checkStepRefs(step: StepNode): void {
   if (step.type === 'DecisionStep') {
     if (step.thenStep) {
-      checkStepRefs(step.thenStep, _workflowName, _entityNames, _diagnostics);
+      checkStepRefs(step.thenStep);
     }
     if (step.elseStep) {
-      checkStepRefs(step.elseStep, _workflowName, _entityNames, _diagnostics);
+      checkStepRefs(step.elseStep);
     }
   }
   // ActionStep and NotifyStep don't reference entities directly

@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server';
 const publicRoutes = ['/', '/auth/login', '/auth/register'];
 const authRoutes = ['/auth/login', '/auth/register'];
 
-export default auth((req: NextRequest & { auth: any }) => {
+export default auth((req: NextRequest & { auth: { user?: { role?: string } } | null }) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
   const isPublicRoute = publicRoutes.some(
