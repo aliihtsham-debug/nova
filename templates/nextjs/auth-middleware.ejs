@@ -1,0 +1,52 @@
+import { auth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+// Routes that don't require authentication
+const publicRoutes = ['/', '/auth/login', '/auth/register'];
+const authRoutes = ['/auth/login', '/auth/register'];
+
+export default auth((req: NextRequest & { auth: any }) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+  const isPublicRoute = publicRoutes.some(
+    (route) => nextUrl.pathname === route || nextUrl.pathname.startsWith('/api/'),
+  );
+  const isAuthRoute = authRoutes.includes(nextUrl.pathname);
+
+  // Redirect logged-in users away from auth routes
+  if (isAuthRoute && isLoggedIn) {
+    return NextResponse.redirect(new URL('/dashboard', nextUrl.origin));
+  }
+
+  // Redirect non-logged-in users to login
+  if (!isPublicRoute && !isLoggedIn) {
+    const callbackUrl = encodeURIComponent(nextUrl.pathname + nextUrl.search);
+    return NextResponse.redirect(
+      new URL(`/auth/login?callbackUrl=${callbackUrl}`, nextUrl.origin),
+    );
+  }
+
+  // RBAC: Check role-based access
+  if (isLoggedIn && nextUrl.pathname.startsWith('/admin/')) {
+    const userRole = req.auth?.user?.role ?? 'MEMBER';
+    if (userRole !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/dashboard', nextUrl.origin));
+    }
+  }
+
+  return NextResponse.next();
+});
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico (favicon)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+  ],
+};

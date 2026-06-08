@@ -1,0 +1,115 @@
+import Link from 'next/link';
+import { Plus, Search } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { prisma } from '@/lib/prisma';
+
+interface <%= entity.name %>ListPageProps {
+  searchParams?: { search?: string; page?: string };
+}
+
+export default async function <%= entity.name %>ListPage({ searchParams }: <%= entity.name %>ListPageProps) {
+  const search = searchParams?.search ?? '';
+  const page = parseInt(searchParams?.page ?? '1');
+  const limit = 20;
+
+  const where = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          <%_ entity.fields.filter(f => f.fieldType === 'string').forEach(f => { -%>
+          { <%= f.name %>: { contains: search, mode: 'insensitive' } },
+          <%_ }) -%>
+        ],
+      }
+    : {};
+
+  const [items, total] = await Promise.all([
+    prisma.<%= entity.name.toLowerCase() %>.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.<%= entity.name.toLowerCase() %>.count({ where }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold"><%= entity.name %>s</h1>
+        <Link href="/<%= entity.name.toLowerCase() %>/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            New <%= entity.name %>
+          </Button>
+        </Link>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search..."
+          defaultValue={search}
+          className="max-w-sm"
+        />
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <%_ entity.fields.slice(0, 5).forEach(f => { -%>
+              <TableHead><%= f.name.charAt(0).toUpperCase() + f.name.slice(1) %></TableHead>
+              <%_ }) -%>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={String(item.id)}>
+                <%_ entity.fields.slice(0, 5).forEach(f => { -%>
+                <TableCell>{String((item as Record<string, unknown>)[<%= f.name === 'id' ? 'id' : f.name %>] ?? '')}</TableCell>
+                <%_ }) -%>
+                <TableCell>
+                  <Link href={'/<%= entity.name.toLowerCase() %>/' + item.id}>
+                    <Button variant="ghost" size="sm">View</Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}
+        </p>
+        <div className="flex gap-2">
+          {page > 1 && (
+            <Link href={`?page=${page - 1 ?? ''}&search=${search}`}>
+              <Button variant="outline" size="sm">Previous</Button>
+            </Link>
+          )}
+          {page < totalPages && (
+            <Link href={`?page=${page + 1}&search=${search}`}>
+              <Button variant="outline" size="sm">Next</Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

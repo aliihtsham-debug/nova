@@ -1,0 +1,28 @@
+<%_
+function mapType(fieldType) {
+  const typeMap = {
+    string: 'String',
+    number: 'Int',
+    boolean: 'Boolean',
+    date: 'DateTime',
+    money: 'Decimal',
+    uuid: 'String'
+  };
+  return typeMap[fieldType] || fieldType;
+}
+
+function buildRelationAnnotation(f) {
+  if (!f.relationTarget) return '';
+  if (f.isList) return '';
+  var fkField = f.name + 'Id';
+  return ' @relation(fields: [' + fkField + '], references: [id])';
+}
+-%>
+model <%= entity.name %> {
+  id        String   @id @default(uuid())
+  <%_ entity.fields.forEach(f => { -%>
+  <%= f.name %><%= f.isNullable ? '?' : '' %>  <%= mapType(f.fieldType) %><%= f.isList ? '[]' : '' %><%= buildRelationAnnotation(f) %>
+  <%_ }) -%>
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,38 @@
+import { z } from 'zod';
+
+<%_
+  // Filter out auto-generated fields
+  var visibleFields = (entity.fields || []).filter(f =>
+    !['id', 'createdAt', 'updatedAt', 'createdat', 'updatedat'].includes(f.name.toLowerCase())
+  );
+
+  function toZodString(f) {
+    var base;
+    switch (f.fieldType) {
+      case 'string':  base = 'z.string().min(1)'; break;
+      case 'number':  base = 'z.coerce.number()'; break;
+      case 'boolean': base = 'z.coerce.boolean()'; break;
+      case 'date':    base = 'z.coerce.date()'; break;
+      case 'money':   base = 'z.number().positive()'; break;
+      case 'uuid':    base = 'z.string().uuid()'; break;
+      default:
+        // Check if it's an enum or entity reference
+        if (f.relationTarget || (entityNames && entityNames.has(f.fieldType))) {
+          base = 'z.string().uuid()'; // FK
+        } else {
+          base = 'z.string()';
+        }
+    }
+    if (f.isList)  base += '.array()';
+    if (f.isNullable) base += '.nullable()';
+    return base;
+  }
+_%>
+
+export const <%= entity.name %>CreateSchema = z.object({
+<%_ visibleFields.forEach(f => { -%>
+  <%= f.name %>: <%= toZodString(f) %>,
+<%_ }) -%>
+});
+
+export type <%= entity.name %>CreateInput = z.infer<typeof <%= entity.name %>CreateSchema>;

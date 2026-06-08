@@ -1,0 +1,29 @@
+{
+  "name": "@nova/generator-nextjs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Next.js App Router generator — emits pages, routes, components, server actions",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist/ *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@nova/parser": "workspace:*",
+    "@nova/compiler": "workspace:*",
+    "ejs": "^3.1.0",
+    "prettier": "^3.2.0"
+  }
+}

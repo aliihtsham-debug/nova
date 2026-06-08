@@ -1,0 +1,64 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import {
+  <%= entity.name %>CreateSchema,
+  <%= entity.name %>UpdateSchema,
+} from '@/lib/schemas/<%= entity.name %>Schema';
+
+export async function create<%= entity.name %>(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<{ errors?: Record<string, string[]> } | void> {
+  const raw = Object.fromEntries(formData.entries());
+
+  // Remove id if present (should not be in create)
+  delete (raw as Record<string, string>).id;
+
+  const result = <%= entity.name %>CreateSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      errors: result.error.flatten().fieldErrors,
+    };
+  }
+
+  await prisma.<%= entity.name.toLowerCase() %>.create({ data: result.data });
+
+  revalidatePath('/<%= entity.name.toLowerCase() %>');
+  redirect('/<%= entity.name.toLowerCase() %>');
+}
+
+export async function update<%= entity.name %>(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<{ errors?: Record<string, string[]> } | void> {
+  const raw = Object.fromEntries(formData.entries());
+  const id = (raw as Record<string, string>).id;
+
+  // Remove non-data fields
+  delete (raw as Record<string, string>).id;
+
+  const result = <%= entity.name %>UpdateSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      errors: result.error.flatten().fieldErrors,
+    };
+  }
+
+  await prisma.<%= entity.name.toLowerCase() %>.update({
+    where: { id },
+    data: result.data,
+  });
+
+  revalidatePath('/<%= entity.name.toLowerCase() %>');
+  revalidatePath(`/<%= entity.name.toLowerCase() %>/${id}`);
+  redirect(`/<%= entity.name.toLowerCase() %>/${id}`);
+}
+
+export async function delete<%= entity.name %>(formData: FormData): Promise<void> {
+  const id = formData.get('id') as string;
+  await prisma.<%= entity.name.toLowerCase() %>.delete({ where: { id } });
+  revalidatePath('/<%= entity.name.toLowerCase() %>');
+}

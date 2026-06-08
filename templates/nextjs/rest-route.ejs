@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+import {
+  <%= entity.name %>CreateSchema,
+  <%= entity.name %>UpdateSchema,
+} from '@/lib/schemas/<%= entity.name %>Schema';
+
+// ─── GET /api/<%= entity.name.toLowerCase() %> (list) ───
+export async function GET(request: NextRequest) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') ?? '1');
+  const limit = parseInt(searchParams.get('limit') ?? '20');
+  const search = searchParams.get('search') ?? '';
+  const sortBy = searchParams.get('sortBy') ?? 'createdAt';
+  const sortOrder = searchParams.get('sortOrder') ?? 'desc';
+
+  const where = search
+    ? {
+        OR: [
+          <%_ entity.fields.filter(f => f.fieldType === 'string' || f.fieldType === 'number').forEach(f => { -%>
+          { <%= f.name %>: { contains: search, mode: 'insensitive' } },
+          <%_ }) -%>
+        ],
+      }
+    : {};
+
+  const [data, total] = await Promise.all([
+    prisma.<%= entity.name.toLowerCase() %>.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+    }),
+    prisma.<%= entity.name.toLowerCase() %>.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    data,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+}
+
+// ─── POST /api/<%= entity.name.toLowerCase() %> (create) ───
+export async function POST(request: Request) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const result = <%= entity.name %>CreateSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json(
+      { errors: result.error.flatten().fieldErrors },
+      { status: 400 },
+    );
+  }
+
+  const item = await prisma.<%= entity.name.toLowerCase() %>.create({ data: result.data });
+  return NextResponse.json(item, { status: 201 });
+}
+
+// ─── PATCH /api/<%= entity.name.toLowerCase() %>/[id] (update) ───
+export { PATCH as PATCH_<%= entity.name %> } from './[<%= entity.name === 'User' ? 'id' : 'id' %>]/route';
+
+// ─── DELETE /api/<%= entity.name.toLowerCase() %>/[id] (delete) ───
+export { DELETE as DELETE_<%= entity.name %> } from './[<%= entity.name === 'User' ? 'id' : 'id' %>]/route';

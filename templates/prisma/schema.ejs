@@ -1,0 +1,17 @@
+﻿datasource db {
+  provider = "<%= datasource.provider %>"
+  url      = "<%= datasource.url %>"
+}
+
+generator client {
+  provider = "<%= generator.provider %>"
+}
+
+<%_ models.forEach(model => { -%>
+<%- model %>
+<%_ }) -%>
+
+<%_ enums.forEach(enumBlock => { -%>
+<%- enumBlock %>
+<%_ }) -%>
+

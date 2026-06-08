@@ -1,0 +1,35 @@
+import { z } from 'zod';
+
+<%_
+  var visibleFields = (entity.fields || []).filter(f =>
+    !['id', 'createdAt', 'updatedAt', 'createdat', 'updatedat'].includes(f.name.toLowerCase())
+  );
+_%>
+
+export const <%= entity.name %>UpdateSchema = z.object({
+<%_ visibleFields.forEach(f => { -%>
+<%_
+  var base;
+  switch (f.fieldType) {
+    case 'string':  base = 'z.string().min(1)'; break;
+    case 'number':  base = 'z.coerce.number()'; break;
+    case 'boolean': base = 'z.coerce.boolean()'; break;
+    case 'date':    base = 'z.coerce.date()'; break;
+    case 'money':   base = 'z.number().positive()'; break;
+    case 'uuid':    base = 'z.string().uuid()'; break;
+    default:
+      if (f.relationTarget || (entityNames && entityNames.has(f.fieldType))) {
+        base = 'z.string().uuid()';
+      } else {
+        base = 'z.string()';
+      }
+  }
+  if (f.isList) base += '.array()';
+  if (f.isNullable) base += '.nullable().optional()';
+  else base += '.optional()';
+_%>
+  <%= f.name %>: <%= base %>,
+<%_ }) -%>
+});
+
+export type <%= entity.name %>UpdateInput = z.infer<typeof <%= entity.name %>UpdateSchema>;

@@ -1,0 +1,28 @@
+{
+  "name": "@nova/lsp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VS Code Language Server for the Nova DSL",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist/ *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@nova/parser": "workspace:*",
+    "vscode-languageserver": "^9.0.0",
+    "vscode-languageserver-textdocument": "^1.0.0"
+  }
+}

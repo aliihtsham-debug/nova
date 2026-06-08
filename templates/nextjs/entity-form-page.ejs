@@ -1,0 +1,116 @@
+'use client';
+
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { create<%= entity.name %>, update<%= entity.name %> } from '@/lib/actions/<%= entity.name.toLowerCase() %>';
+
+interface Props {
+  mode: 'create' | 'edit';
+  <%_ if (mode === 'edit' || true) { -%>
+  initialData?: Record<string, unknown>;
+  <%_ } -%>
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? 'Saving...' : '<%= mode === 'create' ? 'Create' : 'Update' %>'}
+    </Button>
+  );
+}
+
+export default function <%= entity.name %>FormPage({ mode, initialData }: Props) {
+  const action = mode === 'create' ? create<%= entity.name %> : update<%= entity.name %>;
+  const [state, formAction] = useActionState(
+    action as (prevState: unknown, formData: FormData) => Promise<unknown>,
+    null,
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <Link href="/<%= entity.name.toLowerCase() %>">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold">
+          {mode === 'create' ? 'New <%= entity.name %>' : 'Edit <%= entity.name %>'}
+        </h1>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle><%= entity.name %> Information</CardTitle>
+          <CardDescription>
+            {mode === 'create'
+              ? 'Fill in the details below.'
+              : 'Update the fields and save.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={formAction} className="space-y-6">
+            <%_ if (mode === 'edit' || true) { -%>
+            <input type="hidden" name="id" value={String(initialData?.id ?? '')} />
+            <%_ } -%>
+
+<%_
+  var visibleFields = (entity.fields || []).filter(f =>
+    !['id', 'createdAt', 'updatedAt', 'createdat', 'updatedat'].includes(f.name.toLowerCase())
+  );
+  visibleFields.forEach(f => {
+    var label = f.name.charAt(0).toUpperCase() + f.name.slice(1);
+    var defaultValue = initialData ? String(initialData[f.name] ?? '') : '';
+    if (f.fieldType === 'boolean') {
+%>
+            <div className="flex items-center gap-2">
+              <Checkbox name="<%= f.name %>" defaultChecked={Boolean(initialData?.[<%= JSON.stringify(f.name) %>])} />
+              <Label><%= label %></Label>
+            </div>
+<%_ } else { -%>
+            <div className="space-y-2">
+              <Label for="<%= f.name %>"><%= label %></Label>
+              <Input
+                id="<%= f.name %>"
+                name="<%= f.name %>"
+                type="<%= f.fieldType === 'number' || f.fieldType === 'money' ? 'number' : f.fieldType === 'date' ? 'datetime-local' : 'text' %>"
+                defaultValue="<%= defaultValue %>"
+                step="<%= f.fieldType === 'money' ? '0.01' : undefined %>"
+                required={!f.isNullable}
+              />
+            </div>
+<%_ } -%>
+<%_ }); -%>
+
+            <div className="flex gap-2">
+              <SubmitButton />
+              <Link href="/<%= entity.name.toLowerCase() %>">
+                <Button type="button" variant="outline">Cancel</Button>
+              </Link>
+            </div>
+
+            {state && (
+              <p className="text-sm text-destructive">{JSON.stringify(state)}</p>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

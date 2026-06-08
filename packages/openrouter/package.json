@@ -1,0 +1,27 @@
+{
+  "name": "@nova/openrouter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenRouter LLM client for AI code generation and repair agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist/ *.tsbuildinfo"
+  },
+  "dependencies": {
+    "openai": "^4.30.0",
+    "zod-to-json-schema": "^3.22.0"
+  }
+}

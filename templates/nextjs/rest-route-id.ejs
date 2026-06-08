@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+import { <%= entity.name %>UpdateSchema } from '@/lib/schemas/<%= entity.name %>Schema';
+
+interface RouteParams {
+  params: { id: string };
+}
+
+// ─── GET /api/<%= entity.name.toLowerCase() %>/[id] (single) ───
+export async function GET(_request: Request, { params }: RouteParams) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const item = await prisma.<%= entity.name.toLowerCase() %>.findUnique({
+    where: { id: params.id },
+  });
+
+  if (!item) {
+    return NextResponse.json({ error: '<%= entity.name %> not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(item);
+}
+
+// ─── PATCH /api/<%= entity.name.toLowerCase() %>/[id] (update) ───
+export async function PATCH(request: Request, { params }: RouteParams) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const result = <%= entity.name %>UpdateSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json(
+      { errors: result.error.flatten().fieldErrors },
+      { status: 400 },
+    );
+  }
+
+  const item = await prisma.<%= entity.name.toLowerCase() %>.update({
+    where: { id: params.id },
+    data: result.data,
+  });
+
+  return NextResponse.json(item);
+}
+
+// ─── DELETE /api/<%= entity.name.toLowerCase() %>/[id] (delete) ───
+export async function DELETE(_request: Request, { params }: RouteParams) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  await prisma.<%= entity.name.toLowerCase() %>.delete({ where: { id: params.id } });
+  return new Response(null, { status: 204 });
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@nova/compiler",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AST definitions, semantic analyzer, and validation pipeline",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist/ *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@nova/parser": "workspace:*",
+    "typescript": "^5.4.0",
+    "ts-morph": "^22.0.0"
+  }
+}

@@ -1,0 +1,86 @@
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { Pencil, Trash2, ArrowLeft } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { prisma } from '@/lib/prisma';
+import { delete<%= entity.name %> } from '@/lib/actions/<%= entity.name.toLowerCase() %>';
+
+interface Props {
+  params: { id: string };
+}
+
+export default async function <%= entity.name %>DetailPage({ params }: Props) {
+  const item = await prisma.<%= entity.name.toLowerCase() %>.findUnique({
+    where: { id: params.id },
+  });
+
+  if (!item) notFound();
+
+  const typed = item as Record<string, unknown>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Link href="/<%= entity.name.toLowerCase() %>">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold"><%= entity.name %> Details</h1>
+        </div>
+        <div className="flex gap-2">
+          <Link href={'/<%= entity.name.toLowerCase() %>/' + typed.id + '/edit'}>
+            <Button variant="outline" size="sm">
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          </Link>
+          <form action={delete<%= entity.name %>}>
+            <input type="hidden" name="id" value={String(typed.id)} />
+            <Button variant="destructive" size="sm" type="submit">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </form>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle><%= entity.name %></CardTitle>
+          <CardDescription>ID: {String(typed.id)}</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <dl className="grid grid-cols-2 gap-4">
+            <%_ entity.fields.forEach(f => { -%>
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground">
+                <%= f.name.charAt(0).toUpperCase() + f.name.slice(1) %>
+              </dt>
+              <dd className="text-lg">{String(typed[<%= JSON.stringify(f.name) %>] ?? '—')}</dd>
+            </div>
+            <%_ }) -%>
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground">Created At</dt>
+              <dd className="text-lg">{String(typed.createdAt)}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-muted-foreground">Updated At</dt>
+              <dd className="text-lg">{String(typed.updatedAt)}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
