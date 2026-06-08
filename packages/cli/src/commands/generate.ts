@@ -16,7 +16,7 @@ interface GenerateOptions {
  * Generate a Next.js application from a .nova DSL file.
  */
 export async function generateCommand(options: GenerateOptions): Promise<void> {
-  const { file, output, force, format } = options;
+  const { file, output, force } = options;
 
   // Validate DSL file exists
   const dslPath = path.resolve(file);

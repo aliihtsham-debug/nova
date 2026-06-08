@@ -21,6 +21,7 @@ import type {
 } from './ast.js';
 import { analyze } from './analyzer.js';
 import { validate } from './validator.js';
+import { visitCST } from './visitor.js';
 
 export type {
   ProgramNode,
@@ -59,6 +60,7 @@ export { validate } from './validator.js';
 export type { ValidationResult } from './validator.js';
 export { PRIMITIVE_TYPES, isPrimitiveType } from './ast.js';
 export type { PrimitiveType } from './ast.js';
+export { visitCST } from './visitor.js';
 
 // ---------------------------------------------------------------------------
 // compile() — Main entry point
@@ -93,8 +95,6 @@ export async function compile(
   }
 
   // Phase 3: CST → AST (visitor normalization)
-  // Import visitor dynamically to avoid circular deps
-  const { visitCST } = await import('@nova/parser');
   const program: ProgramNode = visitCST(parseResult.cst as Parameters<typeof visitCST>[0]);
 
   // Phase 4: Semantic Analysis

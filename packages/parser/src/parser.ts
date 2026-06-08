@@ -1,4 +1,4 @@
-import { EmbeddedActionsParser, TokenType } from 'chevrotain';
+import { EmbeddedActionsParser, type IToken } from 'chevrotain';
 import {
   // Operators
   AndOperator,
@@ -9,7 +9,6 @@ import {
   LessThan,
   GreaterThanOrEqual,
   LessThanOrEqual,
-  NotOperator,
   // Punctuation
   LCurly,
   RCurly,
@@ -49,9 +48,6 @@ import {
   ToKeyword,
   ViaKeyword,
   MessageKeyword,
-  EmailKeyword,
-  SlackKeyword,
-  SmsKeyword,
   // Literals & Types
   StringLiteral,
   NumberLiteral,
@@ -65,6 +61,7 @@ import {
   UuidType,
   Identifier,
   allTokens,
+  NovaLexer,
 } from './tokens.js';
 
 // ---------------------------------------------------------------------------
@@ -75,41 +72,42 @@ import {
 
 export class NovaParser extends EmbeddedActionsParser {
   // Top-level
-  public program: () => unknown;
+  public program!: () => unknown;
+  public declaration!: () => unknown;
 
   // Declarations
-  public entity: () => unknown;
-  public dashboard: () => unknown;
-  public workflow: () => unknown;
+  public entity!: () => unknown;
+  public dashboard!: () => unknown;
+  public workflow!: () => unknown;
 
   // Entity internals
-  public field: () => unknown;
-  public fieldType: () => unknown;
-  public typeIdentifier: () => unknown;
+  public field!: () => unknown;
+  public fieldType!: () => unknown;
+  public typeIdentifier!: () => unknown;
 
   // Dashboard internals
-  public dashboardElement: () => unknown;
-  public card: () => unknown;
-  public chart: () => unknown;
-  public chartType: () => unknown;
-  public tableView: () => unknown;
-  public column: () => unknown;
-  public identifierList: () => unknown;
+  public dashboardElement!: () => unknown;
+  public card!: () => unknown;
+  public chart!: () => unknown;
+  public chartType!: () => unknown;
+  public tableView!: () => unknown;
+  public column!: () => unknown;
+  public identifierList!: () => unknown;
 
   // Workflow internals
-  public step: () => unknown;
-  public actionStep: () => unknown;
-  public decisionStep: () => unknown;
-  public notifyStep: () => unknown;
-  public notifyChannel: () => unknown;
+  public step!: () => unknown;
+  public actionStep!: () => unknown;
+  public decisionStep!: () => unknown;
+  public notifyStep!: () => unknown;
+  public notifyChannel!: () => unknown;
 
   // Expressions
-  public expression: () => unknown;
-  public logicalOrExpression: () => unknown;
-  public logicalAndExpression: () => unknown;
-  public comparisonExpression: () => unknown;
-  public comparisonOp: () => unknown;
-  public value: () => unknown;
+  public expression!: () => unknown;
+  public logicalOrExpression!: () => unknown;
+  public logicalAndExpression!: () => unknown;
+  public comparisonExpression!: () => unknown;
+  public comparisonOp!: () => unknown;
+  public value!: () => unknown;
 
   constructor() {
     super(allTokens, {
@@ -181,10 +179,13 @@ export class NovaParser extends EmbeddedActionsParser {
         relationTarget = targetToken.image;
       });
 
+      const rawType = typeNode as { image: string; name: string };
+      const fieldType = rawType.image ?? rawType.name;
+
       return {
         type: 'FieldNode',
         name: nameToken.image,
-        fieldType: (typeNode as { name: string }).name,
+        fieldType,
         isNullable,
         isList: false,
         relationTarget,
@@ -274,7 +275,24 @@ export class NovaParser extends EmbeddedActionsParser {
     // =======================================================================
     $.chart = $.RULE('chart', () => {
       $.CONSUME(ChartKeyword);
-      const chartTypeNode = $.SUBRULE($.chartType) as { chartType: string };
+
+      // Chart type is optional — if the next token is a chart type keyword, consume it;
+      // otherwise default to 'bar'.
+      let chartType = 'bar';
+      $.OR([
+        {
+          GATE: () => $.LA(1).tokenType === BarKeyword ||
+                       $.LA(1).tokenType === LineKeyword ||
+                       $.LA(1).tokenType === PieKeyword ||
+                       $.LA(1).tokenType === DonutKeyword,
+          ALT: () => {
+            const ct = $.SUBRULE($.chartType) as { chartType: string };
+            chartType = ct.chartType;
+          },
+        },
+        { ALT: () => { /* no type keyword — default to bar */ } },
+      ]);
+
       const nameToken = $.CONSUME(Identifier);
       $.CONSUME(FromKeyword);
       const sourceToken = $.CONSUME2(Identifier);
@@ -290,7 +308,7 @@ export class NovaParser extends EmbeddedActionsParser {
       return {
         type: 'ChartNode',
         name: nameToken.image,
-        chartType: chartTypeNode.chartType,
+        chartType,
         sourceEntity: sourceToken.image,
         groupByField: groupByToken.image,
         whereClause,
@@ -390,13 +408,14 @@ export class NovaParser extends EmbeddedActionsParser {
     });
 
     // =======================================================================
-    // action_step = 'action' identifier '{' 'run' identifier [ 'input' identifier_list ] [ 'output' identifier_list ] '}'
+    // action_step = 'action' identifier '{' 'run' string_literal [ 'input' identifier_list ] [ 'output' identifier_list ] '}'
     // =======================================================================
     $.actionStep = $.RULE('actionStep', () => {
       $.CONSUME(ActionKeyword);
       const nameToken = $.CONSUME(Identifier);
       $.CONSUME(LCurly);
       $.CONSUME(RunKeyword);
+      // Script name is a string literal
       const scriptToken = $.CONSUME(StringLiteral);
 
       let inputArgs: string[] | undefined;
@@ -461,18 +480,15 @@ export class NovaParser extends EmbeddedActionsParser {
       return {
         type: 'NotifyStepNode',
         name: nameToken.image,
-        targetAddress: targetToken.image.slice(1, -1), // strip quotes
+        targetAddress: targetToken.image,
         channel: channelNode.channel,
-        messageBody: messageToken.image.slice(1, -1), // strip quotes
+        messageBody: messageToken.image,
       };
     });
 
     $.notifyChannel = $.RULE('notifyChannel', () => {
-      return $.OR([
-        { ALT: () => { $.CONSUME(EmailKeyword); return { channel: 'email' }; } },
-        { ALT: () => { $.CONSUME(SlackKeyword); return { channel: 'slack' }; } },
-        { ALT: () => { $.CONSUME(SmsKeyword); return { channel: 'sms' }; } },
-      ]);
+      const token = $.CONSUME(Identifier);
+      return { channel: token.image.toLowerCase() };
     });
 
     // =======================================================================
@@ -608,12 +624,13 @@ export function parseDSL(source: string) {
 
   if (lexResult.errors.length > 0) {
     const messages = lexResult.errors.map(
-      (e) => `Lexer error at line ${e.line}, column ${e.column}: ${e.message}`,
+      (e: { line?: number; column?: number; message: string }) =>
+        `Lexer error at line ${e.line}, column ${e.column}: ${e.message}`,
     );
     throw new Error(messages.join('\n'));
   }
 
-  novaParser.input = lexResult.tokens as TokenType[];
+  novaParser.input = lexResult.tokens as IToken[];
 
   const cst = novaParser.program();
 

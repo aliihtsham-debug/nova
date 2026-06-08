@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@nova/parser": "workspace:*",
+    "@nova/compiler": "workspace:*",
     "vscode-languageserver": "^9.0.0",
     "vscode-languageserver-textdocument": "^1.0.0"
   }

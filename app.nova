@@ -1,0 +1,65 @@
+entity Organization {
+  id   uuid
+  name string
+  slug string
+}
+
+entity User {
+  id    uuid
+  name  string
+  email string
+  role  string
+}
+
+entity Post {
+  id        uuid
+  title     string
+  body      string
+  published boolean
+  author    User @relation(User)
+}
+
+entity Comment {
+  id     uuid
+  text   string
+  post   Post @relation(Post)
+  author User @relation(User)
+}
+
+dashboard Admin {
+  card TotalUsers       from User
+  card TotalPosts       from Post
+  card PublishedPosts   from Post where published == true
+  card TotalComments    from Comment
+
+  chart PostsByUser      from Post by author
+  chart UserGrowth       from User by role
+
+  table RecentPosts      from Post {
+    column title     label "Post Title"
+    column published label "Published"
+  }
+}
+
+workflow Onboarding {
+  action SendWelcomeEmail {
+    run "sendWelcomeEmail"
+    input userEmail, userName
+    output emailSent
+  }
+
+  if emailSent == true
+    then action GrantTrialAccess {
+      run "grantTrial"
+      input userId
+    }
+    else action NotifyAdmin {
+      run "notifyAdmin"
+      input userId
+    }
+
+  notify WelcomeComplete
+    to "userEmail"
+    via email
+    message "Welcome to the platform!"
+}

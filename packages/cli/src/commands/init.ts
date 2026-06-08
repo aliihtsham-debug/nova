@@ -106,7 +106,7 @@ dashboard Store {
  * Initialize a new Nova project.
  */
 export async function initCommand(projectName: string, options: InitOptions): Promise<void> {
-  const { template, auth, billing, git, packageManager } = options;
+  const { template, auth, billing, git } = options;
 
   // Validate template
   if (!VALID_TEMPLATES.includes(template)) {
@@ -132,7 +132,7 @@ export async function initCommand(projectName: string, options: InitOptions): Pr
   fs.mkdirSync(path.join(targetDir, 'prisma'), { recursive: true });
 
   // Write DSL file
-  const dslContent = DSL_TEMPLATES[template];
+  const dslContent = DSL_TEMPLATES[template] ?? DSL_TEMPLATES['default'] ?? '';
   fs.writeFileSync(path.join(targetDir, 'app.nova'), dslContent);
   console.log(chalk.green('  ✔ Created app.nova'));
 
@@ -148,7 +148,7 @@ export async function initCommand(projectName: string, options: InitOptions): Pr
 
   // Write .gitignore
   const gitignoreContent = `node_modules/\n.env\n.env.local\n.next/\nout/\ndist/\ngenerated-app/\n`;
-  fs.writeFileSync(path.join(targetDir, '.gitignore'), gitcontent);
+  fs.writeFileSync(path.join(targetDir, '.gitignore'), gitignoreContent);
   console.log(chalk.green('  ✔ Created .gitignore'));
 
   // Write README
@@ -174,7 +174,7 @@ export async function initCommand(projectName: string, options: InitOptions): Pr
   console.log('');
 }
 
-function generateConfig(template: string, auth: boolean, billing: boolean): string {
+function generateConfig(_template: string, auth: boolean, billing: boolean): string {
   const lines = [
     "import { defineConfig } from '@nova/cli';",
     '',

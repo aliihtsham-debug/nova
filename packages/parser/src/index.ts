@@ -52,9 +52,6 @@ export {
   ToKeyword,
   ViaKeyword,
   MessageKeyword,
-  EmailKeyword,
-  SlackKeyword,
-  SmsKeyword,
   TrueKeyword,
   FalseKeyword,
   StringLiteral,
@@ -69,4 +66,3 @@ export {
 } from './tokens.js';
 
 export { NovaParser, novaParser, parseDSL } from './parser.js';
-export { visitCST } from './visitor.js';

@@ -6,6 +6,10 @@ import { createToken, Lexer } from 'chevrotain';
 // Ordering: most-specific first, generic Identifier last.
 // Chevrotain matches the first token whose pattern fits, so keywords and
 // operators MUST appear before Identifier to avoid shadowing.
+//
+// All keyword patterns use a negative lookahead (?![a-zA-Z0-9_]) to ensure
+// they only match whole words and don't partially match identifiers
+// (e.g. "email" inside "emailSent").
 
 // Whitespace is skipped globally.
 export const WhiteSpace = createToken({
@@ -36,53 +40,50 @@ export const Comma = createToken({ name: 'Comma', pattern: /,/ });
 // --- Annotations ---
 export const RelationKeyword = createToken({ name: 'RelationKeyword', pattern: /@relation/ });
 
-// --- Declaration keywords ---
-export const EntityKeyword = createToken({ name: 'EntityKeyword', pattern: /entity/ });
-export const DashboardKeyword = createToken({ name: 'DashboardKeyword', pattern: /dashboard/ });
-export const WorkflowKeyword = createToken({ name: 'WorkflowKeyword', pattern: /workflow/ });
+// --- Declaration keywords (with word boundary) ---
+export const EntityKeyword = createToken({ name: 'EntityKeyword', pattern: /entity(?![a-zA-Z0-9_])/ });
+export const DashboardKeyword = createToken({ name: 'DashboardKeyword', pattern: /dashboard(?![a-zA-Z0-9_])/ });
+export const WorkflowKeyword = createToken({ name: 'WorkflowKeyword', pattern: /workflow(?![a-zA-Z0-9_])/ });
 
 // --- Dashboard element keywords ---
-export const CardKeyword = createToken({ name: 'CardKeyword', pattern: /card/ });
-export const ChartKeyword = createToken({ name: 'ChartKeyword', pattern: /chart/ });
-export const TableKeyword = createToken({ name: 'TableKeyword', pattern: /table/ });
+export const CardKeyword = createToken({ name: 'CardKeyword', pattern: /card(?![a-zA-Z0-9_])/ });
+export const ChartKeyword = createToken({ name: 'ChartKeyword', pattern: /chart(?![a-zA-Z0-9_])/ });
+export const TableKeyword = createToken({ name: 'TableKeyword', pattern: /table(?![a-zA-Z0-9_])/ });
 
 // --- Chart type keywords ---
-export const BarKeyword = createToken({ name: 'BarKeyword', pattern: /bar/ });
-export const LineKeyword = createToken({ name: 'LineKeyword', pattern: /line/ });
-export const PieKeyword = createToken({ name: 'PieKeyword', pattern: /pie/ });
-export const DonutKeyword = createToken({ name: 'DonutKeyword', pattern: /donut/ });
+export const BarKeyword = createToken({ name: 'BarKeyword', pattern: /bar(?![a-zA-Z0-9_])/ });
+export const LineKeyword = createToken({ name: 'LineKeyword', pattern: /line(?![a-zA-Z0-9_])/ });
+export const PieKeyword = createToken({ name: 'PieKeyword', pattern: /pie(?![a-zA-Z0-9_])/ });
+export const DonutKeyword = createToken({ name: 'DonutKeyword', pattern: /donut(?![a-zA-Z0-9_])/ });
 
 // --- Dashboard sub-clause keywords ---
-export const FromKeyword = createToken({ name: 'FromKeyword', pattern: /from/ });
-export const WhereKeyword = createToken({ name: 'WhereKeyword', pattern: /where/ });
-export const SelectKeyword = createToken({ name: 'SelectKeyword', pattern: /select/ });
-export const ByKeyword = createToken({ name: 'ByKeyword', pattern: /by/ });
-export const ColumnKeyword = createToken({ name: 'ColumnKeyword', pattern: /column/ });
-export const LabelKeyword = createToken({ name: 'LabelKeyword', pattern: /label/ });
+export const FromKeyword = createToken({ name: 'FromKeyword', pattern: /from(?![a-zA-Z0-9_])/ });
+export const WhereKeyword = createToken({ name: 'WhereKeyword', pattern: /where(?![a-zA-Z0-9_])/ });
+export const SelectKeyword = createToken({ name: 'SelectKeyword', pattern: /select(?![a-zA-Z0-9_])/ });
+export const ByKeyword = createToken({ name: 'ByKeyword', pattern: /by(?![a-zA-Z0-9_])/ });
+export const ColumnKeyword = createToken({ name: 'ColumnKeyword', pattern: /column(?![a-zA-Z0-9_])/ });
+export const LabelKeyword = createToken({ name: 'LabelKeyword', pattern: /label(?![a-zA-Z0-9_])/ });
 
 // --- Workflow step keywords ---
-export const IfKeyword = createToken({ name: 'IfKeyword', pattern: /if/ });
-export const ThenKeyword = createToken({ name: 'ThenKeyword', pattern: /then/ });
-export const ElseKeyword = createToken({ name: 'ElseKeyword', pattern: /else/ });
-export const ActionKeyword = createToken({ name: 'ActionKeyword', pattern: /action/ });
-export const NotifyKeyword = createToken({ name: 'NotifyKeyword', pattern: /notify/ });
-export const RunKeyword = createToken({ name: 'RunKeyword', pattern: /run/ });
+export const IfKeyword = createToken({ name: 'IfKeyword', pattern: /if(?![a-zA-Z0-9_])/ });
+export const ThenKeyword = createToken({ name: 'ThenKeyword', pattern: /then(?![a-zA-Z0-9_])/ });
+export const ElseKeyword = createToken({ name: 'ElseKeyword', pattern: /else(?![a-zA-Z0-9_])/ });
+export const ActionKeyword = createToken({ name: 'ActionKeyword', pattern: /action(?![a-zA-Z0-9_])/ });
+export const NotifyKeyword = createToken({ name: 'NotifyKeyword', pattern: /notify(?![a-zA-Z0-9_])/ });
+export const RunKeyword = createToken({ name: 'RunKeyword', pattern: /run(?![a-zA-Z0-9_])/ });
 
 // --- Workflow sub-clause keywords ---
-export const InputKeyword = createToken({ name: 'InputKeyword', pattern: /input/ });
-export const OutputKeyword = createToken({ name: 'OutputKeyword', pattern: /output/ });
-export const ToKeyword = createToken({ name: 'ToKeyword', pattern: /to/ });
-export const ViaKeyword = createToken({ name: 'ViaKeyword', pattern: /via/ });
-export const MessageKeyword = createToken({ name: 'MessageKeyword', pattern: /message/ });
+export const InputKeyword = createToken({ name: 'InputKeyword', pattern: /input(?![a-zA-Z0-9_])/ });
+export const OutputKeyword = createToken({ name: 'OutputKeyword', pattern: /output(?![a-zA-Z0-9_])/ });
+export const ToKeyword = createToken({ name: 'ToKeyword', pattern: /to(?![a-zA-Z0-9_])/ });
+export const ViaKeyword = createToken({ name: 'ViaKeyword', pattern: /via(?![a-zA-Z0-9_])/ });
+export const MessageKeyword = createToken({ name: 'MessageKeyword', pattern: /message(?![a-zA-Z0-9_])/ });
 
-// --- Notify channel keywords ---
-export const EmailKeyword = createToken({ name: 'EmailKeyword', pattern: /email/ });
-export const SlackKeyword = createToken({ name: 'SlackKeyword', pattern: /slack/ });
-export const SmsKeyword = createToken({ name: 'SmsKeyword', pattern: /sms/ });
+// --- Notify channel keywords (removed — channels are parsed as identifiers) ---
 
 // --- Boolean literals ---
-export const TrueKeyword = createToken({ name: 'TrueKeyword', pattern: /true/ });
-export const FalseKeyword = createToken({ name: 'FalseKeyword', pattern: /false/ });
+export const TrueKeyword = createToken({ name: 'TrueKeyword', pattern: /true(?![a-zA-Z0-9_])/ });
+export const FalseKeyword = createToken({ name: 'FalseKeyword', pattern: /false(?![a-zA-Z0-9_])/ });
 
 // --- Literals ---
 export const StringLiteral = createToken({
@@ -95,12 +96,12 @@ export const NumberLiteral = createToken({
 });
 
 // --- Type keywords (handled as keywords, not identifiers) ---
-export const StringType = createToken({ name: 'StringType', pattern: /string/ });
-export const NumberType = createToken({ name: 'NumberType', pattern: /number/ });
-export const BooleanType = createToken({ name: 'BooleanType', pattern: /boolean/ });
-export const DateType = createToken({ name: 'DateType', pattern: /date/ });
-export const MoneyType = createToken({ name: 'MoneyType', pattern: /money/ });
-export const UuidType = createToken({ name: 'UuidType', pattern: /uuid/ });
+export const StringType = createToken({ name: 'StringType', pattern: /string(?![a-zA-Z0-9_])/ });
+export const NumberType = createToken({ name: 'NumberType', pattern: /number(?![a-zA-Z0-9_])/ });
+export const BooleanType = createToken({ name: 'BooleanType', pattern: /boolean(?![a-zA-Z0-9_])/ });
+export const DateType = createToken({ name: 'DateType', pattern: /date(?![a-zA-Z0-9_])/ });
+export const MoneyType = createToken({ name: 'MoneyType', pattern: /money(?![a-zA-Z0-9_])/ });
+export const UuidType = createToken({ name: 'UuidType', pattern: /uuid(?![a-zA-Z0-9_])/ });
 
 // --- Generic identifier (MUST be last) ---
 export const Identifier = createToken({
@@ -174,11 +175,6 @@ export const allTokens: typeof Identifier[] = [
   ToKeyword,
   ViaKeyword,
   MessageKeyword,
-
-  // Notify channels
-  EmailKeyword,
-  SlackKeyword,
-  SmsKeyword,
 
   // Boolean literals
   TrueKeyword,

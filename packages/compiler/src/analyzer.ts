@@ -1,10 +1,9 @@
 import type {
   ProgramNode,
-  DeclarationNode,
   EntityNode,
-  FieldNode,
   DashboardNode,
   WorkflowNode,
+  StepNode,
   CompilerDiagnostic,
 } from './ast.js';
 
@@ -154,32 +153,17 @@ function checkWorkflowRefs(
 }
 
 function checkStepRefs(
-  step: { type: string; name: string; thenStep?: unknown; elseStep?: unknown },
-  workflowName: string,
+  step: StepNode,
+  _workflowName: string,
   _entityNames: Set<string>,
-  diagnostics: CompilerDiagnostic[],
+  _diagnostics: CompilerDiagnostic[],
 ): void {
   if (step.type === 'DecisionStep') {
-    const decision = step as unknown as {
-      type: 'DecisionStep';
-      thenStep: unknown;
-      elseStep?: unknown;
-    };
-    if (decision.thenStep) {
-      checkStepRefs(
-        decision.thenStep as { type: string; name: string },
-        workflowName,
-        _entityNames,
-        diagnostics,
-      );
+    if (step.thenStep) {
+      checkStepRefs(step.thenStep, _workflowName, _entityNames, _diagnostics);
     }
-    if (decision.elseStep) {
-      checkStepRefs(
-        decision.elseStep as { type: string; name: string },
-        workflowName,
-        _entityNames,
-        diagnostics,
-      );
+    if (step.elseStep) {
+      checkStepRefs(step.elseStep, _workflowName, _entityNames, _diagnostics);
     }
   }
   // ActionStep and NotifyStep don't reference entities directly
