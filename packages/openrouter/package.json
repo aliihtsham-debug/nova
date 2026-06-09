@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/openrouter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OpenRouter LLM client for AI code generation and repair agents",
   "type": "module",
   "main": "./dist/index.js",

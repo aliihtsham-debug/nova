@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/lsp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "VS Code Language Server for the Nova DSL",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,8 +26,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@aliihtsham-debug/parser": "workspace:*",
-    "@aliihtsham-debug/compiler": "workspace:*",
+    "@aliihtsham-debug/parser": "^0.1.1",
+    "@aliihtsham-debug/compiler": "^0.1.1",
     "vscode-languageserver": "^9.0.0",
     "vscode-languageserver-textdocument": "^1.0.0"
   }

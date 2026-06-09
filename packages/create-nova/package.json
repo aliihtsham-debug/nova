@@ -1,7 +1,7 @@
 {
   "name": "@aliihtsham-debug/create-nova",
-  "version": "0.1.4",
-  "description": "Scaffold a new Nova project — npx create-nova my-app",
+  "version": "0.1.2",
+  "description": "Scaffold a new Nova project — npx @aliihtsham-debug/create-nova my-app",
   "type": "module",
   "bin": {
     "create-nova": "index.js"
@@ -18,7 +18,17 @@
     "nextjs",
     "fullstack",
     "scaffold",
-    "boilerplate"
+    "boilerplate",
+    "dsl",
+    "code-generator"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@aliihtsham-debug/cli": "^0.1.3",
+    "@aliihtsham-debug/compiler": "^0.1.1",
+    "@aliihtsham-debug/parser": "^0.1.1",
+    "@aliihtsham-debug/generator-prisma": "^0.1.1",
+    "@aliihtsham-debug/generator-zod": "^0.1.1",
+    "@aliihtsham-debug/generator-nextjs": "^0.1.1"
+  }
 }

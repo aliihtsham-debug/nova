@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/generator-nextjs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Next.js App Router generator — emits pages, routes, components, server actions",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,8 +26,8 @@
     "clean": "rimraf dist/ *.tsbuildinfo"
   },
   "dependencies": {
-    "@aliihtsham-debug/parser": "workspace:*",
-    "@aliihtsham-debug/compiler": "workspace:*",
+    "@aliihtsham-debug/parser": "^0.1.1",
+    "@aliihtsham-debug/compiler": "^0.1.1",
     "ejs": "^3.1.0",
     "prettier": "^3.2.0"
   }

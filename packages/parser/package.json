@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/parser",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Chevrotain lexer and parser for the Nova DSL",
   "type": "module",
   "main": "./dist/index.js",
