@@ -1,12 +1,12 @@
 {
   "name": "@aliihtsham-debug/cli",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "CLI tool for Nova — init, generate, dev, test, deploy",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "nova": "./dist/index.js"
+    "nova": "dist/index.js"
   },
   "exports": {
     ".": {
