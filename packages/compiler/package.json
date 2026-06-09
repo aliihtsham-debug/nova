@@ -1,6 +1,6 @@
 {
-  "name": "@nova/compiler",
-  "version": "0.1.0",
+  "name": "@aliihtsham-debug/compiler",
+  "version": "0.1.1",
   "description": "AST definitions, semantic analyzer, and validation pipeline",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,7 +26,7 @@
     "clean": "rimraf dist/ *.tsbuildinfo"
   },
   "dependencies": {
-    "@nova/parser": "workspace:*",
+    "@aliihtsham-debug/parser": "workspace:*",
     "typescript": "^5.4.0",
     "ts-morph": "^22.0.0"
   }

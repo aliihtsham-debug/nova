@@ -1,6 +1,6 @@
 {
-  "name": "@nova/generator-zod",
-  "version": "0.1.0",
+  "name": "@aliihtsham-debug/generator-zod",
+  "version": "0.1.1",
   "description": "Zod schema generator — emits validation schemas from AST",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,8 +26,8 @@
     "clean": "rimraf dist/ *.tsbuildinfo"
   },
   "dependencies": {
-    "@nova/parser": "workspace:*",
-    "@nova/compiler": "workspace:*",
+    "@aliihtsham-debug/parser": "workspace:*",
+    "@aliihtsham-debug/compiler": "workspace:*",
     "zod": "^3.22.0"
   }
 }

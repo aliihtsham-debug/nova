@@ -1,6 +1,6 @@
 {
-  "name": "@nova/generator-prisma",
-  "version": "0.1.0",
+  "name": "@aliihtsham-debug/generator-prisma",
+  "version": "0.1.1",
   "description": "Prisma schema generator — emits schema.prisma from AST",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,7 +26,7 @@
     "clean": "rimraf dist/ *.tsbuildinfo"
   },
   "dependencies": {
-    "@nova/parser": "workspace:*",
-    "@nova/compiler": "workspace:*"
+    "@aliihtsham-debug/parser": "workspace:*",
+    "@aliihtsham-debug/compiler": "workspace:*"
   }
 }
