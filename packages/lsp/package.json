@@ -26,8 +26,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@aliihtsham-debug/parser": "^0.1.1",
-    "@aliihtsham-debug/compiler": "^0.1.1",
+    "@aliihtsham-debug/parser": "^0.1.4",
+    "@aliihtsham-debug/compiler": "^0.1.4",
     "vscode-languageserver": "^9.0.0",
     "vscode-languageserver-textdocument": "^1.0.0"
   }
