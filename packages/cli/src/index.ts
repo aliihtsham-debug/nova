@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { spawn } from 'node:child_process';
 import { initCommand } from './commands/init.js';
 import { generateCommand } from './commands/generate.js';
 
@@ -46,9 +47,16 @@ program
   .description('Start the generated app in development mode')
   .option('--port <number>', 'port to run on', '3000')
   .option('--dir <path>', 'path to generated app', './generated-app')
-  .action(async (_options) => {
-    console.log(chalk.blue('ℹ nova dev — Starting development server...'));
-    // Implementation: spawn `next dev` in the generated app directory
+  .action((options) => {
+    const dir = options.dir ?? './generated-app';
+    const port = options.port ?? '3000';
+    console.log(chalk.blue(`\n◴ Starting development server on port ${port}...\n`));
+    const child = spawn('npm', ['run', 'dev', '--', '--port', port], {
+      cwd: dir,
+      stdio: 'inherit',
+      shell: true,
+    });
+    child.on('exit', (code) => process.exit(code ?? 0));
   });
 
 // ─── nova test ───
@@ -58,9 +66,29 @@ program
   .option('--coverage', 'generate coverage report')
   .option('--watch', 'watch mode')
   .option('--e2e', 'run Playwright e2e tests')
-  .action(async (_options) => {
-    console.log(chalk.blue('ℹ nova test — Running tests...'));
-    // Implementation: run vitest in the generated app
+  .option('--dir <path>', 'path to generated app', './generated-app')
+  .action((options) => {
+    const dir = options.dir ?? './generated-app';
+    if (options.e2e) {
+      console.log(chalk.blue('\n◴ Running Playwright e2e tests...\n'));
+      const child = spawn('npx', ['playwright', 'test'], {
+        cwd: dir,
+        stdio: 'inherit',
+        shell: true,
+      });
+      child.on('exit', (code) => process.exit(code ?? 0));
+    } else {
+      const args = ['vitest', 'run'];
+      if (options.coverage) args.push('--coverage');
+      if (options.watch) args[1] = 'watch';
+      console.log(chalk.blue(`\n◴ Running ${args.slice(0, 2).join(' ')}...\n`));
+      const child = spawn('npx', args, {
+        cwd: dir,
+        stdio: 'inherit',
+        shell: true,
+      });
+      child.on('exit', (code) => process.exit(code ?? 0));
+    }
   });
 
 // ─── nova deploy ───
@@ -70,9 +98,36 @@ program
   .option('--stage <name>', 'deployment stage (staging, production)', 'production')
   .option('--provider <name>', 'provider (vercel, railway, fly)', 'vercel')
   .option('--dir <path>', 'path to generated app', './generated-app')
-  .action(async (_options) => {
-    console.log(chalk.blue('ℹ nova deploy — Deploying...'));
-    // Implementation: run build + deploy via provider CLI
+  .action((options) => {
+    const dir = options.dir ?? './generated-app';
+    const provider = options.provider ?? 'vercel';
+    const stage = options.stage ?? 'production';
+
+    console.log(chalk.blue(`\n◹ Deploying via ${provider} (${stage})...\n`));
+
+    let args: string[];
+    switch (provider) {
+      case 'vercel':
+        args = stage === 'production' ? ['vercel', '--prod'] : ['vercel'];
+        break;
+      case 'railway':
+        args = ['railway', 'up'];
+        break;
+      case 'fly':
+        args = ['flyctl', 'deploy'];
+        break;
+      default:
+        console.error(chalk.red(`✖ Unknown provider '${provider}'. Supported: vercel, railway, fly`));
+        process.exit(1);
+        return;
+    }
+
+    const child = spawn('npx', args, {
+      cwd: dir,
+      stdio: 'inherit',
+      shell: true,
+    });
+    child.on('exit', (code) => process.exit(code ?? 0));
   });
 
 // ─── Error handling ───
@@ -88,3 +143,23 @@ program.exitOverride((err) => {
 });
 
 program.parse();
+
+// ---------------------------------------------------------------------------
+// Config helper (for nova.config.ts files)
+// ---------------------------------------------------------------------------
+export interface NovaConfig {
+  /** Path to the DSL file */
+  file?: string;
+  /** Output directory for generated code */
+  output?: string;
+  /** Enable authentication */
+  auth?: boolean;
+  /** Enable Stripe billing */
+  billing?: boolean;
+  /** Additional generator options */
+  generators?: Record<string, Record<string, unknown>>;
+}
+
+export function defineConfig(config: NovaConfig): NovaConfig {
+  return config;
+}

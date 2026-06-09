@@ -3,7 +3,7 @@ DATABASE_URL="postgresql://user:password@localhost:5432/<%= projectName %>"
 
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="<%= nextauthSecret || 'change-me-to-a-random-secret' %>"
+NEXTAUTH_SECRET="change-me-to-a-random-secret"
 
 # OAuth (optional)
 GOOGLE_CLIENT_ID=""
@@ -11,9 +11,10 @@ GOOGLE_CLIENT_SECRET=""
 GITHUB_CLIENT_ID=""
 GITHUB_CLIENT_SECRET=""
 
-<%_ if (billingEnabled) { -%>
 # Stripe (optional)
 STRIPE_SECRET_KEY=""
 STRIPE_WEBHOOK_SECRET=""
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=""
-<%_ } -%>
+
+# AI (optional)
+OPENROUTER_API_KEY=""

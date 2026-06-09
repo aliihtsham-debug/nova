@@ -38,7 +38,7 @@ function mapType(field: FieldNode, knownEntities: Set<string>): string {
 // ---------------------------------------------------------------------------
 // Model generation
 // ---------------------------------------------------------------------------
-function generateModel(entity: EntityNode, knownEntities: Set<string>): string {
+function generateModel(entity: EntityNode, knownEntities: Set<string>, authEnabled: boolean): string {
   const lines: string[] = [];
   lines.push(`model ${entity.name} {`);
 
@@ -81,6 +81,13 @@ function generateModel(entity: EntityNode, knownEntities: Set<string>): string {
   // Add relation fields for entities that reference this entity
   // (handled by the @relation on the referencing side)
 
+  // Add auth fields to entities with an email field when auth is enabled
+  // (these store the hashed password and avatar for NextAuth Credentials provider)
+  if (authEnabled && entity.fields.some((f) => f.name === 'email')) {
+    lines.push('  passwordHash String?');
+    lines.push('  image       String?');
+  }
+
   // Add timestamp fields (always present for audit + ordering)
   lines.push('  createdAt DateTime @default(now())');
   lines.push('  updatedAt DateTime @updatedAt');
@@ -120,7 +127,7 @@ function generateEnum(name: string, values: readonly string[]): string {
 // ---------------------------------------------------------------------------
 function generateSchema(
   program: ProgramNode,
-  _context: CompilerContext,
+  context: CompilerContext,
 ): string {
   const knownEntities = new Set(
     program.declarations
@@ -128,6 +135,7 @@ function generateSchema(
       .map((e) => e.name),
   );
 
+  const authEnabled = context.options.auth !== false;
   const blocks: string[] = [];
 
   // Datasource
@@ -155,9 +163,54 @@ function generateSchema(
   // Models
   for (const decl of program.declarations) {
     if (decl.type === 'Entity') {
-      blocks.push(generateModel(decl, knownEntities));
+      blocks.push(generateModel(decl, knownEntities, authEnabled));
       blocks.push('');
     }
+  }
+
+  // NextAuth adapter models (required when auth is enabled)
+  if (authEnabled) {
+    blocks.push(`model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}`);
+    blocks.push('');
+
+    blocks.push(`model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}`);
+    blocks.push('');
+
+    blocks.push(`model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}`);
+    blocks.push('');
   }
 
   return blocks.join('\n');

@@ -83,38 +83,25 @@ function fieldToZod(field: FieldNode, knownEntities: Set<string>): string {
 // Schema generation
 // ---------------------------------------------------------------------------
 function generateCreateSchema(entity: EntityNode, knownEntities: Set<string>): string {
-  const lines: string[] = [];
-  lines.push(`export const create${entity.name}Schema = z.object({`);
+  const fieldDefs = entity.fields.map((f) => fieldToZod(f, knownEntities));
+  return `export const create${entity.name}Schema = z.object({
+${fieldDefs.join(',\n')}
+});
 
-  for (const field of entity.fields) {
-    lines.push(fieldToZod(field, knownEntities));
-  }
-
-  lines.push('});');
-  lines.push('');
-  lines.push(`export type Create${entity.name}Input = z.infer<typeof create${entity.name}Schema>;`);
-
-  return lines.join('\n');
+export type Create${entity.name}Input = z.infer<typeof create${entity.name}Schema>;
+`;
 }
 
 function generateUpdateSchema(entity: EntityNode, knownEntities: Set<string>): string {
-  const lines: string[] = [];
-  lines.push(`export const update${entity.name}Schema = z.object({`);
+  const fieldDefs = entity.fields.map((f) =>
+    fieldToZod({ ...f, isNullable: true }, knownEntities),
+  );
+  return `export const update${entity.name}Schema = z.object({
+${fieldDefs.join(',\n')}
+}).partial();
 
-  for (const field of entity.fields) {
-    // All fields optional on update
-    const fieldDef = fieldToZod(
-      { ...field, isNullable: true },
-      knownEntities,
-    );
-    lines.push(fieldDef);
-  }
-
-  lines.push('}).partial();');
-  lines.push('');
-  lines.push(`export type Update${entity.name}Input = z.infer<typeof update${entity.name}Schema>;`);
-
-  return lines.join('\n');
+export type Update${entity.name}Input = z.infer<typeof update${entity.name}Schema>;
+`;
 }
 
 // ---------------------------------------------------------------------------

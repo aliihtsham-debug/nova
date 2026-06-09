@@ -1,0 +1,24 @@
+{
+  "name": "create-nova",
+  "version": "0.1.0",
+  "description": "Scaffold a new Nova project — npx create-nova my-app",
+  "type": "module",
+  "bin": {
+    "create-nova": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "nova",
+    "nextjs",
+    "fullstack",
+    "scaffold",
+    "boilerplate"
+  ],
+  "license": "MIT"
+}

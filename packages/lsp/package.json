@@ -1,7 +1,6 @@
 {
   "name": "@nova/lsp",
   "version": "0.1.0",
-  "private": true,
   "description": "VS Code Language Server for the Nova DSL",
   "type": "module",
   "main": "./dist/index.js",
@@ -19,6 +18,12 @@
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist/ *.tsbuildinfo"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@nova/parser": "workspace:*",

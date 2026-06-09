@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import { compile } from '@nova/compiler';
+import { prismaGenerator } from '@nova/generator-prisma';
+import { zodGenerator } from '@nova/generator-zod';
+import { nextjsGenerator } from '@nova/generator-nextjs';
 
 interface GenerateOptions {
   file: string;
@@ -16,7 +19,7 @@ interface GenerateOptions {
  * Generate a Next.js application from a .nova DSL file.
  */
 export async function generateCommand(options: GenerateOptions): Promise<void> {
-  const { file, output, force } = options;
+  const { file, output, force, auth, billing, format } = options;
 
   // Validate DSL file exists
   const dslPath = path.resolve(file);
@@ -46,12 +49,19 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
 
   const startTime = Date.now();
 
-  // Phase 1-5: Compile (lex → parse → analyze → validate → generate)
-  const result = await compile(dslSource, {
-    verbose: false,
-    projectName,
-    targetDirectory: outputDir,
-  });
+  // Phase 1-6: Compile (lex → parse → analyze → validate → generate)
+  // Wire all three generators into the compilation pipeline
+  const result = await compile(
+    dslSource,
+    {
+      verbose: false,
+      projectName,
+      targetDirectory: outputDir,
+      auth,
+      billing,
+    },
+    [prismaGenerator, zodGenerator, nextjsGenerator],
+  );
 
   // Report diagnostics
   const errors = result.diagnostics.filter((d) => d.severity === 'error');
@@ -83,6 +93,7 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
   // Write artifacts to disk
   fs.mkdirSync(outputDir, { recursive: true });
 
+  let prismaGenerated = false;
   for (const artifact of result.artifacts) {
     const artifactPath = path.join(outputDir, artifact.path);
 
@@ -90,7 +101,29 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
       fs.mkdirSync(artifactPath, { recursive: true });
     } else {
       fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
-      fs.writeFileSync(artifactPath, artifact.content, 'utf-8');
+
+      let content = artifact.content;
+
+      // Optionally format generated TypeScript/JavaScript files with Prettier
+      if (format && /\.(ts|tsx|js|jsx)$/.test(artifact.path)) {
+        try {
+          const prettier = await import('prettier');
+          const formatted = await prettier.format(content, {
+            parser: artifact.path.endsWith('.tsx') ? 'typescript' : 'typescript',
+            singleQuote: true,
+            trailingComma: 'all',
+          });
+          content = formatted;
+        } catch {
+          // If formatting fails, use the unformatted content
+        }
+      }
+
+      fs.writeFileSync(artifactPath, content, 'utf-8');
+
+      if (artifact.path === 'prisma/schema.prisma') {
+        prismaGenerated = true;
+      }
     }
   }
 
@@ -107,6 +140,9 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
   console.log(chalk.white('\nNext steps:'));
   console.log(chalk.gray(`  cd ${output}`));
   console.log(chalk.gray('  npm install'));
+  if (prismaGenerated) {
+    console.log(chalk.gray('  npx prisma db push'));
+  }
   console.log(chalk.gray('  npm run dev'));
   console.log('');
 }

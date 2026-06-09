@@ -175,6 +175,8 @@ export interface CompilerOptions {
   readonly verbose?: boolean;
   readonly projectName: string;
   readonly targetDirectory?: string;
+  readonly auth?: boolean;
+  readonly billing?: boolean;
 }
 
 export interface CompilerContext {

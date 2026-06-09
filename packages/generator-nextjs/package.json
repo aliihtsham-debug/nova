@@ -1,7 +1,6 @@
 {
   "name": "@nova/generator-nextjs",
   "version": "0.1.0",
-  "private": true,
   "description": "Next.js App Router generator — emits pages, routes, components, server actions",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,6 +10,12 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc --build",

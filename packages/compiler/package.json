@@ -1,7 +1,6 @@
 {
   "name": "@nova/compiler",
   "version": "0.1.0",
-  "private": true,
   "description": "AST definitions, semantic analyzer, and validation pipeline",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,6 +10,12 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc --build",
