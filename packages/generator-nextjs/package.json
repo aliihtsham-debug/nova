@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/generator-nextjs",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Next.js App Router generator — emits pages, routes, components, server actions",
   "type": "module",
   "main": "./dist/index.js",

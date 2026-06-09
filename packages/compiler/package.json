@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/compiler",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "AST definitions, semantic analyzer, and validation pipeline",
   "type": "module",
   "main": "./dist/index.js",

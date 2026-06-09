@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/lsp",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "VS Code Language Server for the Nova DSL",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/create-nova",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Scaffold a new Nova project — npx @aliihtsham-debug/create-nova my-app",
   "type": "module",
   "bin": {

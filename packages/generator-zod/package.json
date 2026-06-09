@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/generator-zod",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Zod schema generator — emits validation schemas from AST",
   "type": "module",
   "main": "./dist/index.js",

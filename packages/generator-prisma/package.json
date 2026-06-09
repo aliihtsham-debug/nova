@@ -1,6 +1,6 @@
 {
   "name": "@aliihtsham-debug/generator-prisma",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Prisma schema generator — emits schema.prisma from AST",
   "type": "module",
   "main": "./dist/index.js",
